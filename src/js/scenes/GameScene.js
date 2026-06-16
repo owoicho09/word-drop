@@ -1,8 +1,12 @@
 /**
  * GameScene.js — main Phaser 3 scene.
  *
+ * Touch feel is tuned via three named constants directly below the imports —
+ * HIT_RADIUS_FACTOR, DIR_LOCK_FACTOR, SMOOTH_FACTOR. See their comments for
+ * which direction to nudge each one if the trace still feels too jumpy or sticky.
+ *
  * Key design decisions:
- *  - Direction is detected from raw pixel drag angle (snapped to nearest 45°)
+ *  - Direction is detected from smoothed drag angle (snapped to nearest 45°)
  *    then locked; intermediate cells are projected onto that ray, so diagonal
  *    tracing never requires the pointer to be perfectly inside a cell rectangle.
  *  - Combo multiplier: tracks time between found words (COMBO_WINDOW_MS).
@@ -54,6 +58,39 @@ const COMBO_WINDOW_MS = 5000; // ms between words to chain a combo
 const SNAP_DR = [ 0,  1, 1,  1,  0, -1, -1, -1];
 const SNAP_DC = [ 1,  1, 0, -1, -1, -1,  0,  1];
 
+// ── Developer tuning panel ───────────────────────────────────────────────────
+//
+// DEV_MODE — set to true to show the live on-screen counter panel.
+// When you have found your ideal values:
+//   1. Read the three numbers from the panel.
+//   2. Copy them into the three `let` constants below as the new defaults.
+//   3. Set DEV_MODE back to false and redeploy.
+const DEV_MODE = false;
+
+// ── Touch tuning ─────────────────────────────────────────────────────────────
+//
+// HIT_RADIUS_FACTOR — how close (fraction of cell size) a touch must land to a
+//   tile centre for that tile to be selected on finger-down. 0.65 ≈ 35 px on a
+//   54 px grid. The closest tile always wins; this only filters out touches that
+//   miss the board entirely.
+//   ↑ raise if the first tile is hard to tap accurately
+//   ↓ lower if a neighbouring tile gets grabbed by accident on touch-start
+let HIT_RADIUS_FACTOR = 0.65;
+//
+// DIR_LOCK_FACTOR — minimum drag distance (fraction of cell size) before the
+//   trace direction snaps and locks. Prevents finger wobble at the start of a
+//   drag from locking the wrong direction.
+//   ↑ raise if direction still snaps wrong on short taps (feels jumpy at start)
+//   ↓ lower if the trace feels sticky or slow to start moving
+let DIR_LOCK_FACTOR = 0.42;
+//
+// SMOOTH_FACTOR — weight given to the previous smoothed position each frame
+//   (0 = raw pointer, no smoothing; 1 = pointer never moves). Values above ~0.35
+//   introduce visible lag; the default 0.18 kills micro-jitter with ~1 frame lag.
+//   ↑ raise if tile selection still oscillates during a slow careful drag
+//   ↓ lower if the trace feels sticky or lags noticeably behind your finger
+let SMOOTH_FACTOR = 0.18;
+
 export class GameScene extends Phaser.Scene {
   constructor() {
     super({ key: 'GameScene' });
@@ -93,6 +130,8 @@ export class GameScene extends Phaser.Scene {
     this.traceDr      = null;
     this.traceDc      = null;
     this.traceStartPx = null;
+    this._smoothX     = 0;
+    this._smoothY     = 0;
 
     // Layout
     this.cellSize   = 0;
@@ -133,7 +172,21 @@ export class GameScene extends Phaser.Scene {
 
     this.game.events.on('showHint', this._onShowHint, this);
 
+    // Disable browser scroll, pull-to-refresh, double-tap zoom, and text
+    // selection on the canvas so they don't interrupt the drag trace.
+    const canvas = this.sys.game.canvas;
+    if (!canvas._wdTouchDisabled) {
+      canvas._wdTouchDisabled            = true;
+      canvas.style.touchAction           = 'none';
+      canvas.style.userSelect            = 'none';
+      canvas.style.webkitUserSelect      = 'none';
+      canvas.style.webkitTouchCallout    = 'none';
+      canvas.addEventListener('touchstart', e => e.preventDefault(), { passive: false });
+      canvas.addEventListener('touchmove',  e => e.preventDefault(), { passive: false });
+    }
+
     this._startTimer();
+    if (DEV_MODE) this._buildDevPanel();
   }
 
   // ── Tile construction ─────────────────────────────────────────────────────────
@@ -277,44 +330,65 @@ export class GameScene extends Phaser.Scene {
     // Init AudioContext on first touch (satisfies browser autoplay policy)
     if (!this._ctx) this._audioCtx();
 
-    const cs = this.cellSize;
-    const c  = Math.floor((pointer.x - this.gridX) / cs);
-    const r  = Math.floor((pointer.y - this.gridY) / cs);
-    if (r < 0 || r >= GRID || c < 0 || c >= GRID) return;
+    // Select the tile whose centre is closest to the touch point.
+    // Using closest-centre (rather than floor-division) means touches near cell
+    // edges reliably land on the intended tile, not the neighbouring one.
+    const hitR2 = (this.cellSize * HIT_RADIUS_FACTOR) ** 2;
+    let bestRow = -1, bestCol = -1, bestD2 = Infinity;
+    for (let row = 0; row < GRID; row++) {
+      for (let col = 0; col < GRID; col++) {
+        const { cx, cy } = this.cells[row][col];
+        const d2 = (pointer.x - cx) ** 2 + (pointer.y - cy) ** 2;
+        if (d2 < bestD2) { bestD2 = d2; bestRow = row; bestCol = col; }
+      }
+    }
+    if (bestD2 > hitR2) return; // touch is outside the board area
+
+    // Seed the smoothed position so the first _onMove frame has no initial lag.
+    this._smoothX = pointer.x;
+    this._smoothY = pointer.y;
 
     this.traceStartPx = { x: pointer.x, y: pointer.y };
-    this.tracedCells  = [{ r, c }];
+    this.tracedCells  = [{ r: bestRow, c: bestCol }];
     this.traceDr      = null;
     this.traceDc      = null;
-    this._pressCell(r, c);
+    this._pressCell(bestRow, bestCol);
     this._redrawLine();
   }
 
   _onMove(pointer) {
     if (!this.traceStartPx || this.tracedCells.length === 0) return;
 
+    // Exponential smoothing: absorbs micro-jitter from the touch sensor without
+    // introducing visible lag. SMOOTH_FACTOR=0 means raw pointer; raise it if
+    // tiles still oscillate during a slow drag, lower it if the trace lags.
+    this._smoothX = this._smoothX * SMOOTH_FACTOR + pointer.x * (1 - SMOOTH_FACTOR);
+    this._smoothY = this._smoothY * SMOOTH_FACTOR + pointer.y * (1 - SMOOTH_FACTOR);
+    const px = this._smoothX;
+    const py = this._smoothY;
+
     const { x: startX, y: startY } = this.traceStartPx;
-    const dx   = pointer.x - startX;
-    const dy   = pointer.y - startY;
+    const dx   = px - startX;
+    const dy   = py - startY;
     const dist = Math.sqrt(dx * dx + dy * dy);
 
-    // Phase 1: wait for minimum drag, then lock direction
+    // Phase 1: wait for minimum drag, then lock direction.
     if (this.traceDr === null) {
-      if (dist < this.cellSize * 0.38) return;
+      if (dist < this.cellSize * DIR_LOCK_FACTOR) return;
       const angle = Math.atan2(dy, dx);
       const snap  = ((Math.round(angle / (Math.PI / 4)) % 8) + 8) % 8;
       this.traceDr = SNAP_DR[snap];
       this.traceDc = SNAP_DC[snap];
     }
 
-    // Phase 2: project pointer onto locked direction ray from start cell
+    // Phase 2: project smoothed pointer onto the locked direction ray.
     const { r: r0, c: c0 } = this.tracedCells[0];
     const { cx: startCx, cy: startCy } = this.cells[r0][c0];
 
     const dr = this.traceDr;
     const dc = this.traceDc;
 
-    const proj     = (pointer.x - startCx) * dc + (pointer.y - startCy) * dr;
+    const proj     = (px - startCx) * dc + (py - startCy) * dr;
     const stepDist = Math.sqrt(dr * dr + dc * dc) * this.cellSize;
     const k        = Math.max(0, Math.round(proj / stepDist));
     const currentK = this.tracedCells.length - 1;
@@ -374,6 +448,142 @@ export class GameScene extends Phaser.Scene {
 
   _onCancel() {
     this._clearTrace();
+  }
+
+  // ── Dev tuning panel (DEV_MODE only) ─────────────────────────────────────────
+
+  _buildDevPanel() {
+    if (document.getElementById('wd-dev-toggle')) return; // guard against double-init
+
+    const style = document.createElement('style');
+    style.id = 'wd-dev-style';
+    style.textContent = `
+      #wd-dev-toggle {
+        position: fixed; top: 8px; right: 8px; z-index: 9999;
+        width: 34px; height: 34px;
+        background: rgba(20,10,50,0.82); color: #a78bfa;
+        border: 1px solid #5b21b6; border-radius: 8px;
+        font-size: 17px; cursor: pointer;
+        display: flex; align-items: center; justify-content: center;
+        touch-action: manipulation; user-select: none; -webkit-user-select: none;
+      }
+      #wd-dev-panel {
+        position: fixed; top: 48px; right: 8px; z-index: 9999;
+        background: rgba(10,5,28,0.94); color: #e2d9f3;
+        border: 1px solid #5b21b6; border-radius: 10px;
+        padding: 10px 12px;
+        font-family: 'Inter', system-ui, monospace, sans-serif;
+        display: none; min-width: 190px;
+      }
+      #wd-dev-panel.wd-open { display: block; }
+      .wd-heading {
+        font-size: 9px; font-weight: 700; letter-spacing: 0.10em;
+        text-transform: uppercase; color: #7c3aed;
+        text-align: center; margin-bottom: 9px;
+      }
+      .wd-row {
+        display: flex; align-items: center; gap: 5px;
+        margin-bottom: 7px;
+      }
+      .wd-row:last-child { margin-bottom: 0; }
+      .wd-label {
+        flex: 1; font-size: 11px; font-weight: 600;
+        color: #a78bfa; letter-spacing: 0.02em;
+      }
+      .wd-val {
+        width: 40px; text-align: center;
+        font-size: 13px; font-weight: 700; color: #f3eeff;
+        font-variant-numeric: tabular-nums;
+      }
+      .wd-btn {
+        width: 28px; height: 28px;
+        background: rgba(91,33,182,0.35); color: #c4b5fd;
+        border: 1px solid #6d28d9; border-radius: 6px;
+        font-size: 16px; cursor: pointer; line-height: 1;
+        display: flex; align-items: center; justify-content: center;
+        touch-action: manipulation;
+        user-select: none; -webkit-user-select: none;
+      }
+      .wd-btn:active { background: rgba(124,58,237,0.65); }
+    `;
+    document.head.appendChild(style);
+
+    const toggle = document.createElement('button');
+    toggle.id = 'wd-dev-toggle';
+    toggle.textContent = '⚙';
+    toggle.setAttribute('aria-label', 'Dev touch-tuning panel');
+    document.body.appendChild(toggle);
+
+    const panel = document.createElement('div');
+    panel.id = 'wd-dev-panel';
+
+    const heading = document.createElement('div');
+    heading.className = 'wd-heading';
+    heading.textContent = 'touch tuning';
+    panel.appendChild(heading);
+
+    // Each entry: label shown, step per tap, clamp bounds, getter/setter for
+    // the module-level `let` variable. Steps: 0.05 for HIT_R and LOCK (coarser
+    // effect), 0.02 for SMTH (finer, more sensitive to small changes).
+    const params = [
+      {
+        label: 'HIT_R', step: 0.05, min: 0.30, max: 1.20,
+        get()  { return HIT_RADIUS_FACTOR; },
+        set(v) { HIT_RADIUS_FACTOR = v; },
+      },
+      {
+        label: 'LOCK',  step: 0.05, min: 0.10, max: 0.80,
+        get()  { return DIR_LOCK_FACTOR; },
+        set(v) { DIR_LOCK_FACTOR = v; },
+      },
+      {
+        label: 'SMTH',  step: 0.02, min: 0.00, max: 0.50,
+        get()  { return SMOOTH_FACTOR; },
+        set(v) { SMOOTH_FACTOR = v; },
+      },
+    ];
+
+    params.forEach(p => {
+      const row   = document.createElement('div');
+      row.className = 'wd-row';
+
+      const label = document.createElement('span');
+      label.className = 'wd-label';
+      label.textContent = p.label;
+
+      const valEl = document.createElement('span');
+      valEl.className = 'wd-val';
+      valEl.textContent = p.get().toFixed(2);
+
+      const minus = document.createElement('button');
+      minus.className = 'wd-btn';
+      minus.textContent = '−';
+      minus.setAttribute('aria-label', `Decrease ${p.label}`);
+
+      const plus = document.createElement('button');
+      plus.className = 'wd-btn';
+      plus.textContent = '+';
+      plus.setAttribute('aria-label', `Increase ${p.label}`);
+
+      const adjust = delta => {
+        // Round to 3 decimal places to avoid floating-point drift (e.g. 0.060000000001)
+        const next = Math.round((p.get() + delta) * 1000) / 1000;
+        p.set(Math.min(p.max, Math.max(p.min, next)));
+        valEl.textContent = p.get().toFixed(2);
+      };
+
+      minus.addEventListener('click', () => adjust(-p.step));
+      plus.addEventListener('click',  () => adjust(+p.step));
+
+      row.appendChild(label);
+      row.appendChild(minus);
+      row.appendChild(valEl);
+      row.appendChild(plus);
+      panel.appendChild(row);
+    });
+
+    document.body.appendChild(panel);
+    toggle.addEventListener('click', () => panel.classList.toggle('wd-open'));
   }
 
   // ── Word outcome ──────────────────────────────────────────────────────────────
