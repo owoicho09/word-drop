@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="description" content="WordDrop — the word-search game you can share with friends." />
+  <meta name="theme-color" content="#7c3aed" />
+  <title>WordDrop</title>
+  <link rel="manifest" href="/public/assets/manifest.json" />
+  <link rel="stylesheet" href="src/styles/main.css" />
+  <link rel="stylesheet" href="src/styles/home.css" />
+</head>
+<body>
+
+<div id="app">
+  <header id="site-header">
+    <div id="logo-wrap">
+      <h1>WordDrop</h1>
+      <span id="logo-tag">word search · 2 min</span>
+    </div>
+    <div id="header-right">
+      <span id="player-label"></span>
+      <button id="sign-out-btn" class="hidden">Sign out</button>
+    </div>
+  </header>
+
+  <main id="home-main">
+
+    <!-- Decorative preview grid — shows the game board with example found words -->
+    <div class="demo-board" aria-hidden="true">
+      <!-- Row 0 — WORD (horizontal ›) starts; PLAY (vertical ↓) starts -->
+      <span class="demo-cell dc-purple">W</span><span class="demo-cell dc-purple">O</span><span class="demo-cell dc-purple">R</span><span class="demo-cell dc-purple">D</span><span class="demo-cell">B</span><span class="demo-cell">K</span><span class="demo-cell dc-cyan">P</span>
+      <!-- Row 1 -->
+      <span class="demo-cell">H</span><span class="demo-cell">C</span><span class="demo-cell">T</span><span class="demo-cell">Q</span><span class="demo-cell">J</span><span class="demo-cell">X</span><span class="demo-cell dc-cyan">L</span>
+      <!-- Row 2 — FIND (horizontal ›) -->
+      <span class="demo-cell dc-green">F</span><span class="demo-cell dc-green">I</span><span class="demo-cell dc-green">N</span><span class="demo-cell dc-green">D</span><span class="demo-cell">Z</span><span class="demo-cell">V</span><span class="demo-cell dc-cyan">A</span>
+      <!-- Row 3 — GAME (diagonal ↘) starts; PLAY ends -->
+      <span class="demo-cell dc-amber">G</span><span class="demo-cell">U</span><span class="demo-cell">S</span><span class="demo-cell">B</span><span class="demo-cell">H</span><span class="demo-cell">K</span><span class="demo-cell dc-cyan">Y</span>
+      <!-- Row 4 -->
+      <span class="demo-cell">T</span><span class="demo-cell dc-amber">A</span><span class="demo-cell">Q</span><span class="demo-cell">X</span><span class="demo-cell">R</span><span class="demo-cell">P</span><span class="demo-cell">C</span>
+      <!-- Row 5 -->
+      <span class="demo-cell">Z</span><span class="demo-cell">J</span><span class="demo-cell dc-amber">M</span><span class="demo-cell">K</span><span class="demo-cell">L</span><span class="demo-cell">N</span><span class="demo-cell">B</span>
+      <!-- Row 6 — GAME ends -->
+      <span class="demo-cell">V</span><span class="demo-cell">H</span><span class="demo-cell">U</span><span class="demo-cell dc-amber">E</span><span class="demo-cell">W</span><span class="demo-cell">S</span><span class="demo-cell">Q</span>
+    </div>
+
+    <section id="difficulty-section">
+      <h2>Choose Difficulty</h2>
+      <div id="difficulty-buttons">
+        <button class="diff-btn" data-diff="easy" style="--diff-color:#16a34a">
+          <div class="diff-info">
+            <span class="diff-name">Easy</span>
+            <span class="diff-desc">2 min · common letters</span>
+          </div>
+          <span class="diff-arrow">›</span>
+        </button>
+        <button class="diff-btn" data-diff="normal" style="--diff-color:#6366f1">
+          <div class="diff-info">
+            <span class="diff-name">Normal</span>
+            <span class="diff-desc">2 min · balanced board</span>
+          </div>
+          <span class="diff-arrow">›</span>
+        </button>
+        <button class="diff-btn" data-diff="hard" style="--diff-color:#dc2626">
+          <div class="diff-info">
+            <span class="diff-name">Hard</span>
+            <span class="diff-desc">2 min · tricky letters</span>
+          </div>
+          <span class="diff-arrow">›</span>
+        </button>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<!-- Onboarding modal (shown when player profile is missing) -->
+<div id="onboarding-modal" class="modal-backdrop hidden" role="dialog"
+     aria-modal="true" aria-labelledby="onboarding-title" aria-hidden="true">
+  <div class="modal-card">
+    <h2 id="onboarding-title">How do you want to play?</h2>
+    <p>Register to appear on leaderboards and share grids. Guests play just for fun.</p>
+
+    <!-- Register form -->
+    <form id="register-form" novalidate>
+      <div class="form-group">
+        <label for="reg-email">Email</label>
+        <input id="reg-email" type="email" placeholder="you@example.com"
+               autocomplete="email" inputmode="email" required />
+      </div>
+
+      <div class="form-group">
+        <label for="reg-name">Display name</label>
+        <div class="name-row">
+          <input id="reg-name" type="text" placeholder="BraveEagle"
+                 maxlength="24" autocomplete="off" required />
+          <button type="button" id="auto-name-btn" class="btn-auto">Auto</button>
+        </div>
+      </div>
+
+      <p class="form-error" id="reg-error" role="alert"></p>
+
+      <button type="submit" id="reg-submit-btn" class="btn-primary">
+        Register &amp; Play
+        <span id="reg-spinner" class="spinner hidden"></span>
+      </button>
+    </form>
+
+    <div class="form-divider">or</div>
+
+    <button id="guest-btn" class="btn-ghost">Continue as Guest</button>
+  </div>
+</div>
+
+<script type="module" src="src/js/main.js"></script>
+<script>
+  window.va = window.va || function () { (window.vaq = window.vaq || []).push(arguments); };
+</script>
+<script defer src="/_vercel/insights/script.js"></script>
+</body>
+</html>
