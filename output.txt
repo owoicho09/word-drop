@@ -1,0 +1,101 @@
+================================================================================
+WORDDROP — ARCHITECTURE (REVISED, APPROVED)
+================================================================================
+
+CORRECTIONS FROM REVIEW
+────────────────────────────────────────────────────────────────────────────────
+
+1. USERS TABLE — now properly defined. display_name uniqueness lives here,
+   not on scores. scores stores a denormalized copy of the name at submit time.
+
+2. DICTIONARY — filtered to 3-6 letter words only before deployment.
+   A build script (scripts/build-dictionary.js) reads words_alpha.txt,
+   filters to [3,6] length, writes public/dictionary/words_3to6.txt.
+   Vercel auto-gzips text responses; the browser caches after first fetch.
+   Fetch begins the moment the home screen loads; Trie is built in the
+   background so it's ready before the player taps Play.
+
+3. QUALITY THRESHOLD — recommendation is 20 (see rationale below).
+   If fewer than 20 findable dictionary words exist on the finished board,
+   generateGrid() retries up to MAX_REGEN_ATTEMPTS (5) times before
+   falling back to an unchecked grid with a console warning.
+
+   WHY 20 (not 15):
+     • 12 seeded words are placed; the natural letter-frequency filler
+       typically generates 20–50 additional findable words.
+     • At 15, a tight category + unlucky filler could still produce a
+       board where a fast player clears it in under 2 minutes — kills
+       the "endless find" feel.
+     • At 20 we guarantee ~8+ words beyond the seeded set that the player
+       will discover as surprises. Cost of retries is negligible (<10ms each).
+     • Can be tuned upward to 25 after play-testing without touching the
+       generator logic — it's exported as QUALITY_THRESHOLD from gridGenerator.js.
+
+4. VALIDATOR + SEEDED WORDS — the Trie validates dictionary words; the game
+   scene also passes the current grid's hiddenWords list to the validator
+   so Nigerian foods (SUYA, EGUSI, AKARA, etc.) placed as seeded words can
+   be scored by the player even if they're absent from words_alpha.txt.
+
+────────────────────────────────────────────────────────────────────────────────
+REVISED SUPABASE SCHEMA
+────────────────────────────────────────────────────────────────────────────────
+
+-- users (feeds email marketing list; display_name uniqueness lives here)
+CREATE TABLE users (
+  id           UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
+  auth_id      UUID        UNIQUE REFERENCES auth.users(id) ON DELETE CASCADE,
+  email        TEXT        UNIQUE NOT NULL,
+  display_name TEXT        NOT NULL,
+  created_at   TIMESTAMPTZ DEFAULT NOW()
+);
+CREATE UNIQUE INDEX users_display_name_ci ON users (LOWER(display_name));
+
+-- sessions
+CREATE TABLE sessions (
+  id           UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
+  session_id   TEXT        UNIQUE NOT NULL,
+  grid         JSONB       NOT NULL,
+  hidden_words JSONB       NOT NULL,
+  category     TEXT        NOT NULL,
+  difficulty   TEXT        NOT NULL,
+  seed         BIGINT      NOT NULL,
+  created_at   TIMESTAMPTZ DEFAULT NOW(),
+  expires_at   TIMESTAMPTZ DEFAULT (NOW() + INTERVAL '3 hours')
+);
+
+-- scores (display_name denormalized for leaderboard reads; no uniqueness here)
+CREATE TABLE scores (
+  id           UUID    PRIMARY KEY DEFAULT gen_random_uuid(),
+  session_id   TEXT    REFERENCES sessions(session_id) ON DELETE CASCADE,
+  user_id      UUID    REFERENCES users(id) ON DELETE SET NULL,
+  display_name TEXT    NOT NULL,
+  score        INTEGER NOT NULL DEFAULT 0,
+  words_found  INTEGER NOT NULL DEFAULT 0,
+  time_taken   INTEGER NOT NULL,
+  created_at   TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX idx_scores_session ON scores (session_id, score DESC);
+
+-- Supabase scheduled function or pg_cron TTL cleanup:
+-- DELETE FROM sessions WHERE expires_at < NOW();
+
+RLS:
+  sessions: SELECT anon; INSERT anon (guest grid creation)
+  scores:   SELECT anon; INSERT authenticated only (guests cannot submit)
+  users:    SELECT authenticated (own row); INSERT authenticated
+
+────────────────────────────────────────────────────────────────────────────────
+BUILD ORDER (proceeding now)
+────────────────────────────────────────────────────────────────────────────────
+
+  [1] src/data/letterFrequency.js      ← filler weights
+  [2] src/data/badwords.js             ← sanity filter
+  [3] src/data/words/*.js              ← all category word lists
+  [4] src/data/words/index.js          ← category registry
+  [5] src/js/modules/wordValidator.js  ← Trie + lazy loader
+  [6] src/js/modules/gridGenerator.js  ← core engine  ★ building now
+  [7] scripts/build-dictionary.js      ← pre-filter tool
+  ... (remaining modules and screens follow after review)
+
+================================================================================

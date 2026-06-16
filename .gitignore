@@ -1,0 +1,18 @@
+# Environment — never commit real keys
+.env
+src/js/config.js
+
+# Generated dictionary — rebuilds on deploy
+public/dictionary/words_3to6.txt
+
+# Node
+node_modules/
+.npm
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editor
+.vscode/
+.idea/

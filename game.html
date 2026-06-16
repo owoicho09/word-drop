@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="description" content="WordDrop — the word-search game you can share with friends." />
+  <meta name="theme-color" content="#7c3aed" />
+  <title>WordDrop — Play</title>
+  <link rel="manifest" href="/public/assets/manifest.json" />
+  <link rel="stylesheet" href="src/styles/main.css" />
+  <link rel="stylesheet" href="src/styles/game.css" />
+</head>
+<body>
+
+<div id="game-shell">
+
+  <!-- Top HUD: score · timer · word count -->
+  <div id="game-header">
+    <span id="score">0</span>
+
+    <div id="timer-wrap">
+      <div id="timer-bar">
+        <div id="timer-fill" style="width:100%"></div>
+      </div>
+      <span id="timer-text">2:00</span>
+    </div>
+
+    <span id="word-count">0 words</span>
+  </div>
+
+  <!-- Category bar: mute · chip · label · hint -->
+  <div id="category-bar">
+    <button id="mute-btn" class="mute-btn" aria-label="Toggle sound">
+      <!-- Speaker icon — JS toggles class "muted" to swap to crossed-out version -->
+      <svg id="mute-icon-on" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+           stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/>
+        <path d="M19.07 4.93a10 10 0 0 1 0 14.14"/>
+        <path d="M15.54 8.46a5 5 0 0 1 0 7.07"/>
+      </svg>
+      <svg id="mute-icon-off" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+           stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+           style="display:none">
+        <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/>
+        <line x1="23" y1="9" x2="17" y2="15"/>
+        <line x1="17" y1="9" x2="23" y2="15"/>
+      </svg>
+    </button>
+
+    <div id="category-chip"></div>
+    <span id="category-label"></span>
+
+    <button id="hint-btn" class="hint-btn" aria-label="Show a hint">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+           stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M15 14c.2-1 .7-1.7 1.5-2.5 1-.9 1.5-2.2 1.5-3.5A6 6 0 0 0 6 8c0 1 .2 2.2 1.5 3.5.7.7 1.3 1.5 1.5 2.5"/>
+        <path d="M9 18h6"/><path d="M10 22h4"/>
+      </svg>
+      <span id="hint-label">Hint</span>
+    </button>
+  </div>
+
+  <!-- Combo badge (hidden at ×1) -->
+  <div id="combo-badge" class="hidden" aria-live="polite">
+    <span id="combo-mult">×<span id="combo-count">1</span></span>
+    <span id="combo-label">COMBO</span>
+  </div>
+
+  <!-- Phaser canvas mounts here -->
+  <div id="game-canvas-wrap">
+    <div id="game-canvas"></div>
+  </div>
+
+  <!-- Found-words scroll tray -->
+  <div id="word-tray">
+    <div id="found-words"></div>
+  </div>
+
+</div>
+
+<!-- Share during play (registered players only) -->
+<button id="share-during-btn" class="hidden">Share Grid</button>
+
+<!-- Result overlay (hidden until game ends) -->
+<div id="result-overlay" class="hidden" role="dialog" aria-modal="true"
+     aria-labelledby="result-title">
+  <div id="result-card">
+    <h2 id="result-title">Time's Up!</h2>
+
+    <div id="result-score-display">
+      <span id="final-score">0</span>
+      <span>points</span>
+    </div>
+
+    <p id="result-words-found">0 words found</p>
+
+    <!-- Streak + high score (registered only) -->
+    <div id="streak-panel" class="hidden">
+      <div id="streak-stats" class="hidden">
+        <div class="streak-stat">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="#f59e0b" aria-hidden="true">
+            <path d="M12 2C9.8 4.6 9 7.4 10 10c-1.6-.8-3-2.4-3.2-4C4.4 8.2 3 12.6 3 14c0 5 4 9 9 9s9-4 9-9c0-3.6-1.8-6.8-4.5-8.5-.5.8-.8 1.7-.8 2.7-.7-.7-2.1-2.5-2.5-4.2h-.2z"/>
+          </svg>
+          <span id="streak-count" class="streak-number">0</span>
+          <span class="streak-label">day streak</span>
+        </div>
+        <div class="streak-divider"></div>
+        <div class="streak-stat">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="#7c3aed"
+               stroke-width="2" aria-hidden="true">
+            <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+          </svg>
+          <span id="high-score-val" class="streak-number">0</span>
+          <span class="streak-label">best</span>
+        </div>
+      </div>
+      <p id="streak-guest-prompt" class="hidden streak-guest">
+        Register to track your streak &amp; high score
+      </p>
+    </div>
+
+    <!-- Words breakdown: found vs missed (category words only) -->
+    <div id="words-breakdown">
+      <div class="wb-col">
+        <h4 class="wb-heading wb-heading--found">Found (<span id="wb-found-count">0</span>)</h4>
+        <div id="wb-found-list" class="wb-list"></div>
+      </div>
+      <div class="wb-col">
+        <h4 class="wb-heading wb-heading--missed">Missed (<span id="wb-missed-count">0</span>)</h4>
+        <div id="wb-missed-list" class="wb-list"></div>
+      </div>
+    </div>
+
+    <div id="result-actions">
+      <button id="share-btn" class="hidden">Share this grid</button>
+      <p id="share-copy-feedback" class="hidden"></p>
+      <button id="play-again-btn">Play Again</button>
+    </div>
+
+    <div id="result-leaderboard" class="hidden">
+      <h3>Leaderboard — this grid</h3>
+      <ol id="leaderboard-list"></ol>
+    </div>
+  </div>
+</div>
+
+<!-- Phaser 3 from CDN -->
+<script src="https://cdn.jsdelivr.net/npm/phaser@3.60.0/dist/phaser.min.js"></script>
+<script type="module" src="src/js/game.js"></script>
+</body>
+</html>

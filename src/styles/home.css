@@ -1,0 +1,262 @@
+/* ── Home screen — light warm theme ──────────────────────────────────────── */
+
+#app {
+  min-height:     100dvh;
+  display:        flex;
+  flex-direction: column;
+  background:     var(--bg);
+}
+
+/* ── Site header ──────────────────────────────────────────────────────────── */
+
+#site-header {
+  display:         flex;
+  align-items:     center;
+  justify-content: space-between;
+  padding:         20px 20px 0;
+  padding-top:     max(20px, env(safe-area-inset-top));
+}
+
+#logo-wrap {
+  display:        flex;
+  flex-direction: column;
+  gap:            2px;
+}
+
+#site-header h1 {
+  font-size:      2.1rem;
+  font-weight:    900;
+  letter-spacing: -.04em;
+  line-height:    1;
+  color:          #7c3aed;
+}
+
+#logo-tag {
+  font-size:      .66rem;
+  font-weight:    700;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  color:          var(--text-muted);
+}
+
+#header-right {
+  display:     flex;
+  align-items: center;
+  gap:         10px;
+}
+
+#player-label {
+  font-size:   .82rem;
+  font-weight: 600;
+  color:       var(--text-muted);
+}
+
+#sign-out-btn {
+  padding:       5px 12px;
+  background:    var(--surface-2);
+  color:         var(--text-muted);
+  border-radius: 20px;
+  font-size:     .78rem;
+  font-weight:   600;
+  border:        1px solid var(--border);
+}
+
+/* ── Main content ─────────────────────────────────────────────────────────── */
+
+#home-main {
+  flex:    1;
+  padding: 22px 18px env(safe-area-inset-bottom, 24px);
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+}
+
+/* ── Section headings ─────────────────────────────────────────────────────── */
+
+#category-section h2,
+#difficulty-section h2 {
+  font-size:      .68rem;
+  font-weight:    800;
+  color:          var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: .1em;
+  margin-bottom:  14px;
+}
+
+/* ── Category cards ───────────────────────────────────────────────────────── */
+
+#category-grid {
+  display:               grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap:                   10px;
+}
+
+.cat-card {
+  position:       relative;
+  display:        flex;
+  flex-direction: column;
+  align-items:    flex-start;
+  gap:            10px;
+  padding:        16px 14px 14px;
+  background:     var(--surface);
+  border:         1.5px solid var(--border);
+  border-radius:  18px;
+  text-align:     left;
+  overflow:       hidden;
+  transition:     border-color .18s, transform .13s, box-shadow .18s;
+  box-shadow:     var(--shadow);
+  cursor:         pointer;
+}
+
+/* Persistent soft color tint — makes each card feel owned by its category */
+.cat-card::before {
+  content:       '';
+  position:      absolute;
+  inset:         0;
+  background:    var(--cat-color, var(--accent));
+  opacity:       .055;
+  pointer-events: none;
+  border-radius: inherit;
+  transition:    opacity .18s;
+}
+
+.cat-card:hover,
+.cat-card:focus-visible {
+  border-color: var(--cat-color, var(--accent));
+  transform:    translateY(-2px);
+  box-shadow:   0 6px 24px rgba(28,16,23,.1);
+}
+
+.cat-card:hover::before { opacity: .1; }
+
+.cat-card:active { transform: scale(.95) translateY(0); }
+
+/* Colored icon chip — position:relative keeps it above the ::before tint */
+.cat-chip {
+  width:           40px;
+  height:          40px;
+  border-radius:   12px;
+  background:      var(--cat-color, var(--accent));
+  display:         flex;
+  align-items:     center;
+  justify-content: center;
+  flex-shrink:     0;
+  position:        relative; /* above ::before tint layer */
+  transition:      transform .15s;
+}
+
+.cat-chip svg {
+  width:  22px;
+  height: 22px;
+  color:  #ffffff;
+}
+
+.cat-card:hover .cat-chip { transform: scale(1.08) rotate(-4deg); }
+
+.cat-name {
+  font-size:   .88rem;
+  font-weight: 700;
+  color:       var(--text);
+  line-height: 1.2;
+  position:    relative; /* above ::before tint layer */
+}
+
+/* ── Difficulty section ───────────────────────────────────────────────────── */
+
+#difficulty-section {
+  animation: fadeSlideIn .22s ease;
+}
+
+@keyframes fadeSlideIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0);    }
+}
+
+#difficulty-buttons {
+  display:        flex;
+  flex-direction: column;
+  gap:            10px;
+  margin-bottom:  16px;
+}
+
+.diff-btn {
+  display:         flex;
+  align-items:     center;
+  justify-content: space-between;
+  padding:         15px 16px;
+  background:      var(--surface);
+  border:          1.5px solid var(--border);
+  border-radius:   14px;
+  position:        relative;
+  overflow:        hidden;
+  transition:      border-color .18s, transform .13s, box-shadow .18s;
+  box-shadow:      var(--shadow);
+  cursor:          pointer;
+}
+
+/* Left accent stripe */
+.diff-btn::before {
+  content:      '';
+  position:     absolute;
+  left:         0;
+  top:          0;
+  bottom:       0;
+  width:        4px;
+  background:   var(--diff-color, var(--accent));
+  border-radius: 0 2px 2px 0;
+  transition:   width .18s;
+}
+
+.diff-btn:hover,
+.diff-btn:focus-visible {
+  border-color: var(--diff-color, var(--accent));
+  transform:    translateX(3px);
+  box-shadow:   0 4px 16px rgba(28,16,23,.09);
+}
+
+.diff-btn:hover::before { width: 6px; }
+
+.diff-btn:active { transform: scale(.97) translateX(0); }
+
+.diff-info {
+  display:        flex;
+  flex-direction: column;
+  gap:            3px;
+  text-align:     left;
+  padding-left:   8px;
+}
+
+.diff-name {
+  font-size:   .95rem;
+  font-weight: 700;
+  color:       var(--text);
+}
+
+.diff-desc {
+  font-size:   .8rem;
+  color:       var(--text-muted);
+  font-weight: 400;
+}
+
+.diff-arrow {
+  font-size:   1.4rem;
+  color:       var(--text-muted);
+  line-height: 1;
+  font-weight: 300;
+  transition:  transform .15s, color .15s;
+}
+
+.diff-btn:hover .diff-arrow {
+  color:     var(--diff-color, var(--accent));
+  transform: translateX(3px);
+}
+
+#back-btn {
+  background:  none;
+  color:       var(--text-muted);
+  font-size:   .88rem;
+  padding:     8px 0;
+  font-weight: 600;
+}
+
+#back-btn:hover { color: var(--text); }

@@ -1,0 +1,530 @@
+/* ── Game shell — light warm theme ───────────────────────────────────────── */
+
+html, body { overflow: hidden; height: 100%; }
+
+#game-shell {
+  display:        flex;
+  flex-direction: column;
+  height:         100dvh;
+  height:         100vh; /* fallback */
+  background:     #faf7f2; /* warm cream — matches Phaser canvas */
+}
+
+/* ── Header ───────────────────────────────────────────────────────────────── */
+
+#game-header {
+  display:         flex;
+  align-items:     center;
+  justify-content: space-between;
+  padding:         10px 18px;
+  padding-top:     max(10px, env(safe-area-inset-top));
+  background:      #ffffff;
+  border-bottom:   1.5px solid #ede5db;
+  gap:             12px;
+  flex-shrink:     0;
+  box-shadow:      0 1px 6px rgba(28,16,23,.06);
+}
+
+#score {
+  font-size:   1.4rem;
+  font-weight: 900;
+  color:       #7c3aed;
+  min-width:   52px;
+  letter-spacing: -.02em;
+}
+
+/* ── Timer ────────────────────────────────────────────────────────────────── */
+
+#timer-wrap {
+  flex:           1;
+  display:        flex;
+  flex-direction: column;
+  align-items:    center;
+  gap:            4px;
+}
+
+#timer-bar {
+  width:         100%;
+  max-width:     200px;
+  height:        6px;
+  background:    #ede5db;
+  border-radius: 3px;
+  overflow:      hidden;
+}
+
+#timer-fill {
+  height:        100%;
+  background:    #7c3aed;
+  border-radius: 3px;
+  transition:    width 1s linear, background .3s;
+}
+
+#timer-fill.urgent {
+  background: #dc2626;
+  animation:  timerPulse .55s infinite alternate;
+}
+
+@keyframes timerPulse {
+  to { opacity: .55; }
+}
+
+#timer-text {
+  font-size:            .82rem;
+  font-weight:          700;
+  color:                #6b5b74;
+  font-variant-numeric: tabular-nums;
+  letter-spacing:       .02em;
+}
+
+#word-count {
+  font-size:  .82rem;
+  font-weight: 600;
+  color:      #6b5b74;
+  min-width:  52px;
+  text-align: right;
+}
+
+/* ── Category bar: mute · chip · label · hint ─────────────────────────────── */
+
+#category-bar {
+  display:         flex;
+  align-items:     center;
+  justify-content: center;
+  gap:             8px;
+  padding:         6px 16px 5px;
+  flex-shrink:     0;
+  background:      #faf7f2;
+  position:        relative;
+}
+
+#category-chip {
+  width:         22px;
+  height:        22px;
+  border-radius: 6px;
+  flex-shrink:   0;
+}
+
+#category-label {
+  font-size:      .72rem;
+  font-weight:    800;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  color:          #6b5b74;
+}
+
+/* Hint button sits at the right edge of the bar */
+.hint-btn {
+  position:      absolute;
+  right:         14px;
+  display:       flex;
+  align-items:   center;
+  gap:           4px;
+  padding:       5px 10px;
+  background:    #f3f0ff;
+  color:         #7c3aed;
+  border-radius: 20px;
+  font-size:     .75rem;
+  font-weight:   700;
+  border:        1.5px solid #ddd6fe;
+  transition:    background .15s, opacity .15s, border-color .15s;
+}
+
+.hint-btn svg {
+  width:  15px;
+  height: 15px;
+  flex-shrink: 0;
+}
+
+.hint-btn:hover  { background: #ede9fe; border-color: #c4b5fd; }
+.hint-btn:active { transform: scale(.93); }
+
+.hint-btn.used {
+  opacity:      .45;
+  pointer-events: none;
+}
+
+/* ── Mute button (left edge of category bar) ─────────────────────────────── */
+
+.mute-btn {
+  position:    absolute;
+  left:        14px;
+  display:     flex;
+  align-items: center;
+  padding:     5px;
+  background:  transparent;
+  border:      none;
+  color:       #9b8aaa;
+  border-radius: 8px;
+  transition:  color .15s, background .15s;
+}
+
+.mute-btn svg { width: 17px; height: 17px; display: block; }
+.mute-btn:hover  { color: #7c3aed; background: #f3f0ff; }
+.mute-btn:active { transform: scale(.9); }
+.mute-btn.muted  { color: #c4b8d0; }
+
+/* ── Combo badge ──────────────────────────────────────────────────────────── */
+
+#combo-badge {
+  display:         flex;
+  align-items:     center;
+  justify-content: center;
+  gap:             5px;
+  padding:         4px 14px 4px 10px;
+  background:      linear-gradient(135deg, #f59e0b, #f97316);
+  border-radius:   20px;
+  align-self:      center;
+  margin:          0 auto;
+  box-shadow:      0 2px 10px rgba(245,158,11,.35);
+  width:           fit-content;
+  flex-shrink:     0;
+}
+
+#combo-mult {
+  font-size:      1rem;
+  font-weight:    900;
+  color:          #fff;
+  letter-spacing: -.02em;
+}
+
+#combo-label {
+  font-size:      .6rem;
+  font-weight:    800;
+  letter-spacing: .12em;
+  color:          rgba(255,255,255,.85);
+  text-transform: uppercase;
+}
+
+#combo-badge.combo-pop {
+  animation: comboPop .38s cubic-bezier(.34,1.56,.64,1) both;
+}
+
+@keyframes comboPop {
+  0%   { transform: scale(.7); opacity: .6; }
+  60%  { transform: scale(1.2); }
+  100% { transform: scale(1);  opacity: 1; }
+}
+
+/* ── Canvas wrap ──────────────────────────────────────────────────────────── */
+
+#game-canvas-wrap {
+  flex:            1;
+  display:         flex;
+  align-items:     center;
+  justify-content: center;
+  overflow:        hidden;
+}
+
+#game-canvas canvas {
+  display:      block;
+  touch-action: none; /* prevent scroll during drag */
+}
+
+/* ── Word tray ────────────────────────────────────────────────────────────── */
+
+#word-tray {
+  min-height:     60px;
+  max-height:     80px;
+  padding:        8px 14px;
+  padding-bottom: max(8px, env(safe-area-inset-bottom));
+  overflow-x:     auto;
+  overflow-y:     hidden;
+  display:        flex;
+  align-items:    center;
+  background:     #ffffff;
+  border-top:     1.5px solid #ede5db;
+  flex-shrink:    0;
+  scrollbar-width: none;
+}
+
+#word-tray::-webkit-scrollbar { display: none; }
+
+#found-words {
+  display:   flex;
+  gap:       6px;
+  flex-wrap: nowrap;
+}
+
+.word-tag {
+  display:       inline-block;
+  padding:       4px 10px;
+  background:    #f3f0ff;
+  color:         #7c3aed;
+  border-radius: 20px;
+  font-size:     .8rem;
+  font-weight:   600;
+  white-space:   nowrap;
+  border:        1px solid #ddd6fe;
+  animation:     popIn .18s ease;
+}
+
+@keyframes popIn {
+  from { transform: scale(.75); opacity: 0; }
+  to   { transform: scale(1);   opacity: 1; }
+}
+
+/* ── Share during play ────────────────────────────────────────────────────── */
+
+#share-during-btn {
+  position:      fixed;
+  top:           max(14px, env(safe-area-inset-top, 14px));
+  right:         14px;
+  padding:       7px 14px;
+  background:    #7c3aed;
+  color:         #fff;
+  border-radius: 20px;
+  font-size:     .8rem;
+  font-weight:   600;
+  z-index:       50;
+  box-shadow:    0 2px 10px rgba(124,58,237,.35);
+}
+
+/* ── Result overlay ───────────────────────────────────────────────────────── */
+
+#result-overlay {
+  position:        fixed;
+  inset:           0;
+  background:      rgba(28,16,23,.5);
+  display:         flex;
+  align-items:     flex-end;
+  justify-content: center;
+  z-index:         100;
+  opacity:         0;
+  transition:      opacity .3s ease;
+  padding-bottom:  env(safe-area-inset-bottom);
+}
+
+#result-overlay.visible { opacity: 1; }
+
+#result-card {
+  background:    #ffffff;
+  border-radius: 24px 24px 0 0;
+  width:         100%;
+  max-width:     480px;
+  padding:       28px 22px 32px;
+  transform:     translateY(30px);
+  transition:    transform .3s ease;
+  box-shadow:    0 -4px 40px rgba(28,16,23,.12);
+}
+
+#result-overlay.visible #result-card { transform: translateY(0); }
+
+#result-title {
+  font-size:     1.5rem;
+  font-weight:   900;
+  color:         #1c1017;
+  margin-bottom: 18px;
+  text-align:    center;
+  letter-spacing: -.02em;
+}
+
+#result-score-display {
+  display:         flex;
+  flex-direction:  column;
+  align-items:     center;
+  margin-bottom:   6px;
+}
+
+#final-score {
+  font-size:      3.4rem;
+  font-weight:    900;
+  color:          #7c3aed;
+  line-height:    1;
+  letter-spacing: -.03em;
+}
+
+#result-score-display span:last-child {
+  font-size:  .88rem;
+  color:      #6b5b74;
+  font-weight: 600;
+  margin-top: 2px;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+}
+
+#result-words-found {
+  text-align:    center;
+  font-size:     .95rem;
+  color:         #6b5b74;
+  font-weight:   500;
+  margin-bottom: 22px;
+}
+
+#result-actions {
+  display:        flex;
+  flex-direction: column;
+  gap:            10px;
+  margin-bottom:  22px;
+}
+
+#share-btn {
+  padding:       13px;
+  background:    #7c3aed;
+  color:         #fff;
+  border-radius: 12px;
+  font-size:     .95rem;
+  font-weight:   700;
+}
+
+#play-again-btn {
+  padding:       13px;
+  background:    #f0ebe3;
+  color:         #1c1017;
+  border-radius: 12px;
+  font-size:     .95rem;
+  font-weight:   600;
+  border:        1.5px solid #e3d9cc;
+}
+
+#share-copy-feedback {
+  text-align: center;
+  font-size:  .85rem;
+  color:      #059669;
+  padding:    6px 0;
+  min-height: 22px;
+  font-weight: 600;
+}
+
+/* ── Words breakdown ─────────────────────────────────────────────────────── */
+
+#words-breakdown {
+  display:    flex;
+  gap:        14px;
+  margin:     0 0 22px;
+  max-height: 160px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: #e3d9cc transparent;
+}
+
+.wb-col { flex: 1; min-width: 0; }
+
+.wb-heading {
+  font-size:      .68rem;
+  font-weight:    800;
+  text-transform: uppercase;
+  letter-spacing: .09em;
+  margin:         0 0 8px;
+}
+
+.wb-heading--found  { color: #059669; }
+.wb-heading--missed { color: #9b8aaa; }
+
+.wb-list {
+  display:   flex;
+  flex-wrap: wrap;
+  gap:       4px;
+}
+
+.word-chip {
+  font-size:     .68rem;
+  font-weight:   600;
+  padding:       3px 8px;
+  border-radius: 9999px;
+  white-space:   nowrap;
+}
+
+.word-chip--found {
+  background: rgba(5,150,105,.1);
+  color:      #059669;
+  border:     1px solid rgba(5,150,105,.25);
+}
+
+.word-chip--missed {
+  background: rgba(107,91,116,.07);
+  color:      #9b8aaa;
+  border:     1px solid rgba(107,91,116,.15);
+}
+
+/* ── Leaderboard in result ────────────────────────────────────────────────── */
+
+#result-leaderboard h3 {
+  font-size:      .7rem;
+  font-weight:    800;
+  color:          #9b8aaa;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  margin-bottom:  12px;
+}
+
+#leaderboard-list { list-style: none; }
+
+#leaderboard-list li {
+  display:       flex;
+  align-items:   center;
+  gap:           8px;
+  padding:       8px 0;
+  border-bottom: 1px solid #f0ebe3;
+  font-size:     .9rem;
+  color:         #1c1017;
+}
+
+#leaderboard-list li:last-child { border-bottom: none; }
+
+.lb-rank  { color: #9b8aaa; min-width: 18px; font-weight: 700; }
+.lb-name  { flex: 1; font-weight: 500; }
+.lb-score { color: #7c3aed; font-weight: 700; min-width: 52px; text-align: right; }
+.lb-words { color: #9b8aaa; font-size: .8rem; min-width: 24px; text-align: right; }
+
+/* ── Streak + high-score panel ───────────────────────────────────────────── */
+
+#streak-panel {
+  margin:        0 0 18px;
+  border-radius: 14px;
+  overflow:      hidden;
+}
+
+#streak-stats {
+  display:         flex;
+  align-items:     center;
+  justify-content: center;
+  gap:             0;
+  background:      #faf7f2;
+  border:          1.5px solid #ede5db;
+  border-radius:   14px;
+  padding:         12px 20px;
+}
+
+.streak-stat {
+  display:     flex;
+  align-items: center;
+  gap:         6px;
+  flex:        1;
+  justify-content: center;
+}
+
+.streak-number {
+  font-size:      1.35rem;
+  font-weight:    900;
+  color:          #1c1017;
+  letter-spacing: -.02em;
+}
+
+.streak-label {
+  font-size:      .72rem;
+  font-weight:    600;
+  color:          #9b8aaa;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+}
+
+.streak-divider {
+  width:      1px;
+  height:     32px;
+  background: #ede5db;
+  flex-shrink: 0;
+  margin:     0 8px;
+}
+
+.streak-guest {
+  font-size:   .82rem;
+  color:       #9b8aaa;
+  text-align:  center;
+  margin:      0;
+  padding:     10px 14px;
+  background:  #faf7f2;
+  border:      1.5px dashed #e3d9cc;
+  border-radius: 12px;
+  font-weight:  500;
+}
+

@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="description" content="WordDrop — the word-search game you can share with friends." />
+  <meta name="theme-color" content="#7c3aed" />
+  <title>WordDrop</title>
+  <link rel="manifest" href="/public/assets/manifest.json" />
+  <link rel="stylesheet" href="src/styles/main.css" />
+  <link rel="stylesheet" href="src/styles/home.css" />
+</head>
+<body>
+
+<div id="app">
+  <header id="site-header">
+    <div id="logo-wrap">
+      <h1>WordDrop</h1>
+      <span id="logo-tag">word search · 2 min</span>
+    </div>
+    <div id="header-right">
+      <span id="player-label"></span>
+      <button id="sign-out-btn" class="hidden">Sign out</button>
+    </div>
+  </header>
+
+  <main id="home-main">
+
+    <!-- Step 1: Category -->
+    <section id="category-section">
+      <h2>Pick a Category</h2>
+      <div id="category-grid">
+        <!-- Populated by main.js -->
+      </div>
+    </section>
+
+    <!-- Step 2: Difficulty (shown after category picked) -->
+    <section id="difficulty-section" class="hidden">
+      <h2>Choose Difficulty</h2>
+      <div id="difficulty-buttons">
+        <button class="diff-btn" data-diff="easy" style="--diff-color:#16a34a">
+          <div class="diff-info">
+            <span class="diff-name">Easy</span>
+            <span class="diff-desc">2 min · common letters</span>
+          </div>
+          <span class="diff-arrow">›</span>
+        </button>
+        <button class="diff-btn" data-diff="normal" style="--diff-color:#6366f1">
+          <div class="diff-info">
+            <span class="diff-name">Normal</span>
+            <span class="diff-desc">2 min · balanced board</span>
+          </div>
+          <span class="diff-arrow">›</span>
+        </button>
+        <button class="diff-btn" data-diff="hard" style="--diff-color:#dc2626">
+          <div class="diff-info">
+            <span class="diff-name">Hard</span>
+            <span class="diff-desc">2 min · tricky letters</span>
+          </div>
+          <span class="diff-arrow">›</span>
+        </button>
+      </div>
+      <button id="back-btn">← Back to categories</button>
+    </section>
+
+  </main>
+</div>
+
+<!-- Onboarding modal (shown when player profile is missing) -->
+<div id="onboarding-modal" class="modal-backdrop hidden" role="dialog"
+     aria-modal="true" aria-labelledby="onboarding-title" aria-hidden="true">
+  <div class="modal-card">
+    <h2 id="onboarding-title">How do you want to play?</h2>
+    <p>Register to appear on leaderboards and share grids. Guests play just for fun.</p>
+
+    <!-- Register form -->
+    <form id="register-form" novalidate>
+      <div class="form-group">
+        <label for="reg-email">Email</label>
+        <input id="reg-email" type="email" placeholder="you@example.com"
+               autocomplete="email" inputmode="email" required />
+      </div>
+
+      <div class="form-group">
+        <label for="reg-name">Display name</label>
+        <div class="name-row">
+          <input id="reg-name" type="text" placeholder="BraveEagle"
+                 maxlength="24" autocomplete="off" required />
+          <button type="button" id="auto-name-btn" class="btn-auto">Auto</button>
+        </div>
+      </div>
+
+      <p class="form-error" id="reg-error" role="alert"></p>
+
+      <button type="submit" id="reg-submit-btn" class="btn-primary">
+        Register &amp; Play
+        <span id="reg-spinner" class="spinner hidden"></span>
+      </button>
+    </form>
+
+    <div class="form-divider">or</div>
+
+    <button id="guest-btn" class="btn-ghost">Continue as Guest</button>
+  </div>
+</div>
+
+<script type="module" src="src/js/main.js"></script>
+</body>
+</html>

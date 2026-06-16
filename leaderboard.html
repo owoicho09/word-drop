@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>WordDrop — Leaderboard</title>
+  <link rel="stylesheet" href="src/styles/main.css" />
+  <style>
+    body { padding: 24px 20px env(safe-area-inset-bottom,20px); max-width: 480px; margin: 0 auto; }
+    h1   { font-size: 1.4rem; font-weight: 800; color: var(--accent); margin-bottom: 4px; }
+    .meta { font-size: .85rem; color: var(--text-muted); margin-bottom: 20px; }
+    ol   { list-style: none; }
+    li   { display: flex; gap: 10px; align-items: center; padding: 12px 0;
+           border-bottom: 1px solid var(--border); font-size: .95rem; }
+    li:last-child { border-bottom: none; }
+    .rank  { color: var(--text-muted); font-weight: 700; min-width: 20px; }
+    .name  { flex: 1; font-weight: 500; }
+    .pts   { color: var(--accent); font-weight: 700; }
+    .words { font-size: .8rem; color: var(--text-muted); }
+    .back  { display: inline-block; margin-top: 20px; color: var(--accent);
+             font-size: .9rem; font-weight: 600; text-decoration: none; }
+    #error { color: var(--text-muted); margin-top: 40px; text-align: center; }
+    #play-btn { display: block; margin-top: 16px; padding: 12px; background: var(--accent);
+                color: #fff; border-radius: 10px; font-size: .95rem; font-weight: 600;
+                text-align: center; text-decoration: none; }
+  </style>
+</head>
+<body>
+
+  <h1>WordDrop</h1>
+  <p class="meta" id="lb-meta">Loading…</p>
+
+  <ol id="lb-list"></ol>
+
+  <div id="error" class="hidden"></div>
+
+  <a id="play-link" href="#" class="play-btn hidden">Play this grid</a>
+  <a href="/" class="back">← New game</a>
+
+  <script type="module">
+    import { sessionManager } from './src/js/modules/sessionManager.js';
+    import { leaderboard }    from './src/js/modules/leaderboard.js';
+
+    const sid = new URLSearchParams(window.location.search).get('sid')
+             ?? window.location.pathname.match(/\/lb\/([a-z0-9]+)/)?.[1];
+
+    const metaEl  = document.getElementById('lb-meta');
+    const listEl  = document.getElementById('lb-list');
+    const errEl   = document.getElementById('error');
+    const playLink = document.getElementById('play-link');
+
+    if (!sid) {
+      metaEl.textContent = '';
+      errEl.textContent  = 'No session specified.';
+      errEl.classList.remove('hidden');
+    } else {
+      (async () => {
+        const session = await sessionManager.fetchSession(sid);
+        if (!session) {
+          metaEl.textContent = '';
+          errEl.textContent  = 'This session has expired or doesn\'t exist.';
+          errEl.classList.remove('hidden');
+          return;
+        }
+        metaEl.textContent = `${session.category} · ${session.difficulty}`;
+
+        playLink.href = `/play/${sid}`;
+        playLink.classList.remove('hidden');
+
+        const rows = await leaderboard.fetchForSession(sid);
+        if (!rows.length) {
+          listEl.innerHTML = '<li style="color:var(--text-muted)">No scores yet — be the first!</li>';
+          return;
+        }
+        rows.forEach((r, i) => {
+          const li = document.createElement('li');
+          li.innerHTML = `
+            <span class="rank">${i + 1}</span>
+            <span class="name">${r.display_name.replace(/[&<>"']/g, c =>
+              ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}</span>
+            <span class="pts">${r.score} pts</span>
+            <span class="words">${r.words_found}w</span>
+          `;
+          listEl.appendChild(li);
+        });
+      })();
+    }
+  </script>
+</body>
+</html>
