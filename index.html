@@ -26,16 +26,25 @@
 
   <main id="home-main">
 
-    <!-- Step 1: Category -->
-    <section id="category-section">
-      <h2>Pick a Category</h2>
-      <div id="category-grid">
-        <!-- Populated by main.js -->
-      </div>
-    </section>
+    <!-- Decorative preview grid — shows the game board with example found words -->
+    <div class="demo-board" aria-hidden="true">
+      <!-- Row 0 — WORD (horizontal ›) starts; PLAY (vertical ↓) starts -->
+      <span class="demo-cell dc-purple">W</span><span class="demo-cell dc-purple">O</span><span class="demo-cell dc-purple">R</span><span class="demo-cell dc-purple">D</span><span class="demo-cell">B</span><span class="demo-cell">K</span><span class="demo-cell dc-cyan">P</span>
+      <!-- Row 1 -->
+      <span class="demo-cell">H</span><span class="demo-cell">C</span><span class="demo-cell">T</span><span class="demo-cell">Q</span><span class="demo-cell">J</span><span class="demo-cell">X</span><span class="demo-cell dc-cyan">L</span>
+      <!-- Row 2 — FIND (horizontal ›) -->
+      <span class="demo-cell dc-green">F</span><span class="demo-cell dc-green">I</span><span class="demo-cell dc-green">N</span><span class="demo-cell dc-green">D</span><span class="demo-cell">Z</span><span class="demo-cell">V</span><span class="demo-cell dc-cyan">A</span>
+      <!-- Row 3 — GAME (diagonal ↘) starts; PLAY ends -->
+      <span class="demo-cell dc-amber">G</span><span class="demo-cell">U</span><span class="demo-cell">S</span><span class="demo-cell">B</span><span class="demo-cell">H</span><span class="demo-cell">K</span><span class="demo-cell dc-cyan">Y</span>
+      <!-- Row 4 -->
+      <span class="demo-cell">T</span><span class="demo-cell dc-amber">A</span><span class="demo-cell">Q</span><span class="demo-cell">X</span><span class="demo-cell">R</span><span class="demo-cell">P</span><span class="demo-cell">C</span>
+      <!-- Row 5 -->
+      <span class="demo-cell">Z</span><span class="demo-cell">J</span><span class="demo-cell dc-amber">M</span><span class="demo-cell">K</span><span class="demo-cell">L</span><span class="demo-cell">N</span><span class="demo-cell">B</span>
+      <!-- Row 6 — GAME ends -->
+      <span class="demo-cell">V</span><span class="demo-cell">H</span><span class="demo-cell">U</span><span class="demo-cell dc-amber">E</span><span class="demo-cell">W</span><span class="demo-cell">S</span><span class="demo-cell">Q</span>
+    </div>
 
-    <!-- Step 2: Difficulty (shown after category picked) -->
-    <section id="difficulty-section" class="hidden">
+    <section id="difficulty-section">
       <h2>Choose Difficulty</h2>
       <div id="difficulty-buttons">
         <button class="diff-btn" data-diff="easy" style="--diff-color:#16a34a">
@@ -60,7 +69,6 @@
           <span class="diff-arrow">›</span>
         </button>
       </div>
-      <button id="back-btn">← Back to categories</button>
     </section>
 
   </main>

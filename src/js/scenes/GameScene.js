@@ -38,7 +38,7 @@ const BAND_COLORS = [
   0xea580c, 0x2563eb, 0x0d9488, 0xdc2626, 0x65a30d,
 ];
 
-const BAND_ALPHA = 0.45;
+const BAND_ALPHA = 0.28;
 
 // ── Depth layers ──────────────────────────────────────────────────────────────
 
@@ -835,10 +835,12 @@ export class GameScene extends Phaser.Scene {
   // ── Persistent band ───────────────────────────────────────────────────────────
 
   _drawFoundBand(cells, color) {
-    const R = this.cellSize * 0.29;
+    // Thinner ribbon so letters remain readable through overlapping bands.
+    const R  = this.cellSize * 0.18;   // endpoint circle radius (was 0.29)
+    const LW = this.cellSize * 0.30;   // connecting line width (was R*2 = 0.58)
 
     if (cells.length > 1) {
-      this.bandGfx.lineStyle(R * 2, color, BAND_ALPHA * 0.9);
+      this.bandGfx.lineStyle(LW, color, BAND_ALPHA * 0.9);
       this.bandGfx.beginPath();
       const f = this.cells[cells[0].r][cells[0].c];
       this.bandGfx.moveTo(f.cx, f.cy);

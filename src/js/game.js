@@ -325,26 +325,24 @@ async function handleGameEnd({ score, foundWords, hiddenWords, sessionId, isGues
 }
 
 // ── Words breakdown ────────────────────────────────────────────────────────────
-// Shows only the category words seeded into THIS grid — found vs missed.
-// Dictionary bonus words are intentionally excluded (too many, mostly obscure).
+// Found: every word the player actually traced (seeded + bonus dictionary words).
+// Missed: seeded category words that were never found.
 
 function renderWordsBreakdown(hiddenWords, foundWords) {
-  const foundListEl  = document.getElementById('wb-found-list');
-  const missedListEl = document.getElementById('wb-missed-list');
+  const foundListEl   = document.getElementById('wb-found-list');
+  const missedListEl  = document.getElementById('wb-missed-list');
   const foundCountEl  = document.getElementById('wb-found-count');
   const missedCountEl = document.getElementById('wb-missed-count');
   if (!foundListEl || !missedListEl) return;
 
-  const foundSet = new Set(foundWords.map(w => w.toUpperCase()));
-
-  const foundSeeded  = hiddenWords.filter(h =>  foundSet.has(h.word.toUpperCase()));
+  const foundSet     = new Set(foundWords.map(w => w.toUpperCase()));
   const missedSeeded = hiddenWords.filter(h => !foundSet.has(h.word.toUpperCase()));
 
-  if (foundCountEl)  foundCountEl.textContent  = foundSeeded.length;
+  if (foundCountEl)  foundCountEl.textContent  = foundWords.length;
   if (missedCountEl) missedCountEl.textContent = missedSeeded.length;
 
   foundListEl.innerHTML = '';
-  for (const { word } of foundSeeded) {
+  for (const word of foundWords) {
     const chip = document.createElement('span');
     chip.className   = 'word-chip word-chip--found';
     chip.textContent = word.toLowerCase();

@@ -161,6 +161,42 @@
   position:    relative; /* above ::before tint layer */
 }
 
+/* ── Demo board (decorative preview, not interactive) ────────────────────── */
+
+.demo-board {
+  display:               grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap:                   3px;
+  width:                 min(300px, 100%);
+  margin:                0 auto;
+  padding:               8px;
+  background:            #ede8e0;
+  border-radius:         14px;
+  pointer-events:        none;
+  user-select:           none;
+  -webkit-user-select:   none;
+}
+
+.demo-cell {
+  aspect-ratio:    1;
+  display:         flex;
+  align-items:     center;
+  justify-content: center;
+  background:      #ffffff;
+  border-radius:   6px;
+  font-size:       clamp(11px, 3.5vw, 14px);
+  font-weight:     800;
+  color:           #2d1b69;
+  box-shadow:      0 1px 0 #cfc0ad;
+  font-family:     'Inter', system-ui, sans-serif;
+}
+
+/* Highlighted found-word cells — colours match the game's BAND_COLORS palette */
+.demo-cell.dc-purple { background: #7c3aed; color: #fff; box-shadow: 0 1px 0 #5b21b6; }
+.demo-cell.dc-green  { background: #059669; color: #fff; box-shadow: 0 1px 0 #047857; }
+.demo-cell.dc-amber  { background: #d97706; color: #fff; box-shadow: 0 1px 0 #b45309; }
+.demo-cell.dc-cyan   { background: #0891b2; color: #fff; box-shadow: 0 1px 0 #0369a1; }
+
 /* ── Difficulty section ───────────────────────────────────────────────────── */
 
 #difficulty-section {
